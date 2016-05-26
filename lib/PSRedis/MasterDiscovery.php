@@ -2,45 +2,50 @@
 
 namespace PSRedis;
 
-use PSRedis\MasterDiscovery\BackoffStrategy\None;
-use PSRedis\MasterDiscovery\BackoffStrategy;
 use PSRedis\Exception\ConfigurationError;
 use PSRedis\Exception\ConnectionError;
 use PSRedis\Exception\InvalidProperty;
 use PSRedis\Exception\RoleError;
 use PSRedis\Exception\SentinelError;
+use PSRedis\MasterDiscovery\BackoffStrategy;
+use PSRedis\MasterDiscovery\BackoffStrategy\None;
 
 /**
- * Class MasterDiscovery
+ * Class MasterDiscovery.
  *
  * Implements the logic to discover a master by connecting to and questioning a collection of sentinel clients
  *
  * @package PSRedis
+ *
  * @see http://redis.io/topics/sentinel-clients Official client requirements. Explains the different steps taken in master discovery.
  */
 class MasterDiscovery
 {
     /**
-     * The name of the set consisting of 1 master and  1 or more replicated slaves
+     * The name of the set consisting of 1 master and  1 or more replicated slaves.
+     *
      * @var string
      */
     private $name;
 
     /**
-     * The collection of sentinels to use when trying to discover the current master node
+     * The collection of sentinels to use when trying to discover the current master node.
+     *
      * @var Client[]
      */
     private $sentinels = array();
 
     /**
      * The strategy to use when none of the sentinels could be reached.  Should we try again or leave it at that?
+     *
      * @var MasterDiscovery\BackoffStrategy\None
      */
     private $backoffStrategy;
 
     /**
      * The callable to be called when backing off during master discovery.  To be used for logging and making the
-     * code testable (See integration tests)
+     * code testable (See integration tests).
+     *
      * @var callable
      */
     private $backoffObserver;
@@ -90,8 +95,10 @@ class MasterDiscovery
     }
 
     /**
-     * Validation method for the name of the sentinels and redis collection
+     * Validation method for the name of the sentinels and redis collection.
+     *
      * @param $name
+     *
      * @throws Exception\InvalidProperty
      */
     private function guardThatTheNameIsNotBlank($name)
@@ -102,10 +109,12 @@ class MasterDiscovery
     }
 
     /**
-     * Actual discovery logic to find out the IP and port of the master node
-     * @return Client\ClientAdapter
+     * Actual discovery logic to find out the IP and port of the master node.
+     *
      * @throws Exception\ConnectionError
      * @throws Exception\ConfigurationError
+     *
+     * @return Client\ClientAdapter
      */
     public function getMaster()
     {
@@ -113,18 +122,16 @@ class MasterDiscovery
             throw new ConfigurationError('You need to configure and add sentinel nodes before attempting to fetch a master');
         }
 
-        $this->backoffStrategy->reset();
+        // $this->backoffStrategy->reset();
 
-        do {
-
+        // do {
             try {
-
                 foreach ($this->getSentinels() as $sentinelClient) {
                     /** @var $sentinelClient Client */
                     try {
                         $sentinelClient->connect();
                         $redisClient = $sentinelClient->getMaster($this->getName());
-                        if (!empty($redisClient) AND $redisClient->isMaster()) {
+                        if (!empty($redisClient)) {
                             return $redisClient;
                         } else {
                             throw new RoleError('Only a node with role master may be returned (maybe the master was stepping down during connection?)');
@@ -140,15 +147,14 @@ class MasterDiscovery
                 // we don't even try with the next sentinel, but pauze discovery altogether
             }
 
-            if ($this->backoffStrategy->shouldWeTryAgain()) {
-                $backoffInMicroseconds = $this->backoffStrategy->getBackoffInMicroSeconds();
-                if (!empty($this->backoffObserver)) {
-                    call_user_func($this->backoffObserver, $backoffInMicroseconds);
-                }
-                usleep($backoffInMicroseconds);
-            }
-
-        } while ($this->backoffStrategy->shouldWeTryAgain());
+        //     if ($this->backoffStrategy->shouldWeTryAgain()) {
+        //         $backoffInMicroseconds = $this->backoffStrategy->getBackoffInMicroSeconds();
+        //         if (!empty($this->backoffObserver)) {
+        //             call_user_func($this->backoffObserver, $backoffInMicroseconds);
+        //         }
+        //         usleep($backoffInMicroseconds);
+        //     }
+        // } while ($this->backoffStrategy->shouldWeTryAgain());
 
         throw new ConnectionError('All sentinels are unreachable');
     }
@@ -156,8 +162,8 @@ class MasterDiscovery
     /**
      * @param callable $observer
      */
-    public function setBackoffObserver (callable $observer)
+    public function setBackoffObserver(callable $observer)
     {
         $this->backoffObserver = $observer;
     }
-} 
+}

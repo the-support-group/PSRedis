@@ -90,7 +90,7 @@ $masterDiscovery->addSentinel($sentinel3);
 $master = $masterDiscovery->getMaster();
 ```
 
-### Configuring backoff
+<!-- ### Configuring backoff
 
 When we fail to discover the location of the master, we need to back off and try again.  The back off mechanism is
 configurable and you can implement your own by implementing the **\PSRedis\Client\BackoffStrategy**
@@ -111,7 +111,7 @@ $masterDiscovery->setBackoffStrategy($incrementalBackoff);
 
 // try to discover the master
 $master = $masterDiscovery->getMaster();
-```
+``` -->
 
 ## Testing
 
